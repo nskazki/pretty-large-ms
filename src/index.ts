@@ -142,5 +142,16 @@ const prettyLargeMs: IPrettyLargeMs = function prettyLargeMs(
 export default prettyLargeMs
 
 // ES6 Modules default exports interop with CommonJS
-extend(prettyLargeMs, module.exports)
 module.exports = prettyLargeMs
+module.exports.default = prettyLargeMs
+
+module.exports.compact = compact
+module.exports.short   = short
+module.exports.long    = long
+module.exports.verbose = verbose
+
+module.exports.longReplacers  = longReplacers
+module.exports.shortReplacers = shortReplacers
+
+module.exports.useSpace    = useSpace
+module.exports.notUseSpace = notUseSpace
