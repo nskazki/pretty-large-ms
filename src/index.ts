@@ -1,13 +1,14 @@
 'use strict'
 
 import parseMs from 'parse-large-ms'
-import pluralize = require('pluralize')
 import { inspect } from 'util'
 import { isNumber, isString, isPlainObject,
-  first, last, includes, get, extend, values } from 'lodash'
+  first, last, includes, get, values, defaults } from 'lodash'
+import clearRequire = require('clear-require')
+let pluralize = require('pluralize')
 
 export interface IPrettyLargeMs {
-  (ms: number|string, size?: number, replacers?: Object, space?: string): string
+  (ms: number|string, size?: number, replacers?: IReplacers, space?: string): string
 }
 
 const bitOrder = [
@@ -30,78 +31,118 @@ export const long = 4
 export const verbose = bitOrder.length
 
 // replacer
-export const longReplacers = {
-  'milliseconds': 'ms'
+export interface IReplacers {
+  millenniums?:  string,
+  centuries?:    string,
+  decades?:      string,
+  years?:        string,
+  months?:       string,
+  days?:         string,
+  hours?:        string,
+  minutes?:      string,
+  seconds?:      string,
+  milliseconds?: string
 }
 
-export const shortReplacers = {
-  'millenniums':  'MI',
-  'centuries':    'C',
-  'decades':      'D',
-  'years':        'Y',
-  'months':       'M',
-  'days':         'd',
-  'hours':        'h',
-  'minutes':      'm',
-  'seconds':      's',
-  'milliseconds': 'ms'
+export const longReplacers: IReplacers = {
+  millenniums:  'millennium',
+  centuries:    'century',
+  decades:      'decade',
+  years:        'year',
+  months:       'month',
+  days:         'day',
+  hours:        'hour',
+  minutes:      'minute',
+  seconds:      'second',
+  milliseconds: 'ms'
 }
 
-function getReplacers(size: number): Object {
-  return size < long
-    ? shortReplacers
-    : longReplacers
+export const shortReplacers: IReplacers = {
+  millenniums:  'MI',
+  centuries:    'C',
+  decades:      'D',
+  years:        'Y',
+  months:       'M',
+  days:         'd',
+  hours:        'h',
+  minutes:      'm',
+  seconds:      's',
+  milliseconds: 'ms'
+}
+
+const toExtendRawReplacers: IReplacers = {
+  millenniums:  'millennium',
+  centuries:    'century',
+  decades:      'decade',
+  years:        'year',
+  months:       'month',
+  days:         'day',
+  hours:        'hour',
+  minutes:      'minute',
+  seconds:      'second',
+  milliseconds: 'millisecond'
 }
 
 // space
 export const useSpace = ' '
 export const notUseSpace = ''
-function getSpace(size: number, replacers: Object): string {
+function getSpace(replacers: Object): string {
   if (replacers === longReplacers) return useSpace
   if (replacers === shortReplacers) return notUseSpace
-
-  return size < long
-    ? notUseSpace
-    : useSpace
+  else return useSpace
 }
 
 // addUncountableReplacer
-let uncountableReplacer: Array<string> = []
-function addUncountableReplacer(replacer: string|Array<string>): IPrettyLargeMs {
+let uncountableReplacers: Array<string> = []
+export function addUncountableReplacers(replacer: string|Array<string>): IPrettyLargeMs {
   const replacers = isString(replacer)
     ? [ replacer ]
     : replacer
 
   replacers
-    .filter(r => !includes(uncountableReplacer, r))
+    .filter(r => !includes(uncountableReplacers, r))
     .forEach(r => {
-      uncountableReplacer.push(r)
+      uncountableReplacers.push(r)
       pluralize.addUncountableRule(r)
     })
 
   return module.exports
 }
 
+export function dropUncountableReplacers(): IPrettyLargeMs {
+  clearRequire('pluralize')
+  pluralize = require('pluralize')
+
+  uncountableReplacers.length = 0
+  addUncountableReplacers(values<string>(shortReplacers))
+  pluralize.addPluralRule(/^millennium$/i, 'millenniums')
+
+  return module.exports
+}
+
+addUncountableReplacers(values<string>(shortReplacers))
+pluralize.addPluralRule(/^millennium$/i, 'millenniums')
+
 // export
 const prettyLargeMs: IPrettyLargeMs = function prettyLargeMs(
   ms, size = short,
-  replacers = getReplacers(size),
-  space = getSpace(size, replacers)) {
+  rawReplacers = longReplacers,
+  space = getSpace(rawReplacers)) {
 
-  // input valudate
+  // input valudation
   if (!isString(ms) && !isNumber(ms))
     throw new Error(`prettyLargeMs: ms must be a number|string! \n\t ms: ${inspect(ms)}`)
-  if (!isNumber(size))
-    throw new Error(`prettyLargeMs: size must be a number! \
+  if (!isNumber(size) || size < 1)
+    throw new Error(`prettyLargeMs: size must be large then 1! \
       \n\t size: ${inspect(size)} \
       \n\t use one of default sizes: \
       \n\t   prettyLargeMs.compact=${compact} \
       \n\t   prettyLargeMs.short=${short} \
       \n\t   prettyLargeMs.long=${long} \
       \n\t   prettyLargeMs.verbose=${verbose}`)
-  if (!isPlainObject(replacers))
+  if (!isPlainObject(rawReplacers))
     throw new Error(`prettyLargeMs: replacers must be a plain object! \
-      \n\t replacers: ${inspect(replacers)} \
+      \n\t replacers: ${inspect(rawReplacers)} \
       \n\t use one of default replacers: \
       \n\t   prettyLargeMs.longReplacers=${inspect(longReplacers)} \
       \n\t   prettyLargeMs.shortReplacers=${inspect(shortReplacers).replace(/,\n\s+/g, ' ')}`)
@@ -113,8 +154,8 @@ const prettyLargeMs: IPrettyLargeMs = function prettyLargeMs(
       \n\t   prettyLargeMs.notUseSpace=${inspect(notUseSpace)}`)
 
   // main
-  addUncountableReplacer(values<string>(replacers))
   const info: any = parseMs(ms)
+  const replacers: IReplacers = defaults({}, rawReplacers, toExtendRawReplacers)
 
   const rawAllDfnBitNames = bitOrder.filter(bitName => {
     return info[bitName] !== 0
@@ -144,6 +185,8 @@ export default prettyLargeMs
 // ES6 Modules default exports interop with CommonJS
 module.exports = prettyLargeMs
 module.exports.default = prettyLargeMs
+module.exports.addUncountableReplacers = addUncountableReplacers
+module.exports.dropUncountableReplacers = dropUncountableReplacers
 
 module.exports.compact = compact
 module.exports.short   = short
