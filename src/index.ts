@@ -50,7 +50,20 @@ export interface IReplacers {
   milliseconds?: string
 }
 
-export const longReplacers: IReplacers = {
+export interface IStrictReplacers {
+  millenniums:  string,
+  centuries:    string,
+  decades:      string,
+  years:        string,
+  months:       string,
+  days:         string,
+  hours:        string,
+  minutes:      string,
+  seconds:      string,
+  milliseconds: string
+}
+
+export const longReplacers: IStrictReplacers = {
   millenniums:  'millennium',
   centuries:    'century',
   decades:      'decade',
@@ -63,7 +76,7 @@ export const longReplacers: IReplacers = {
   milliseconds: 'ms'
 }
 
-export const shortReplacers: IReplacers = {
+export const shortReplacers: IStrictReplacers = {
   millenniums:  'MI',
   centuries:    'C',
   decades:      'D',
@@ -76,7 +89,7 @@ export const shortReplacers: IReplacers = {
   milliseconds: 'ms'
 }
 
-const toExtendRawReplacers: IReplacers = {
+const toExtendRawReplacers: IStrictReplacers = {
   millenniums:  'millennium',
   centuries:    'century',
   decades:      'decade',
