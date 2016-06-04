@@ -5,11 +5,20 @@ import { inspect } from 'util'
 import { isNumber, isString, isPlainObject,
   first, last, includes, get, values, defaults } from 'lodash'
 import clearRequire = require('clear-require')
-let pluralize = require('pluralize')
 
 export interface IPrettyLargeMs {
   (ms: number|string, size?: number, replacers?: IReplacers, space?: string): string
 }
+// since pluralize uses a global set of rules
+// I protect themselves and others from crossing rulesets
+const loadPluralize = () => {
+  clearRequire('pluralize')
+  const pluralize = require('pluralize')
+  clearRequire('pluralize')
+  return pluralize
+}
+
+let pluralize = loadPluralize()
 
 const bitOrder = [
   'millenniums',
@@ -109,9 +118,8 @@ export function addUncountableReplacers(replacer: string|Array<string>): IPretty
   return module.exports
 }
 
-export function dropUncountableReplacers(): IPrettyLargeMs {
-  clearRequire('pluralize')
-  pluralize = require('pluralize')
+export function dropUncountableReplacers() {
+  pluralize = loadPluralize()
 
   uncountableReplacers.length = 0
   addUncountableReplacers(values<string>(shortReplacers))
