@@ -6,9 +6,6 @@ import { isNumber, isString, isPlainObject,
   first, last, includes, get, values, defaults } from 'lodash'
 import clearRequire = require('clear-require')
 
-export interface IPrettyLargeMs {
-  (ms: number|string, size?: number, replacers?: IReplacers, space?: string): string
-}
 // since pluralize uses a global set of rules
 // I protect themselves and others from crossing rulesets
 const loadPluralize = () => {
@@ -103,7 +100,7 @@ function getSpace(replacers: Object): string {
 
 // addUncountableReplacer
 let uncountableReplacers: Array<string> = []
-export function addUncountableReplacers(replacer: string|Array<string>): IPrettyLargeMs {
+export function addUncountableReplacers(replacer: string|Array<string>) {
   const replacers = isString(replacer)
     ? [ replacer ]
     : replacer
@@ -114,8 +111,6 @@ export function addUncountableReplacers(replacer: string|Array<string>): IPretty
       uncountableReplacers.push(r)
       pluralize.addUncountableRule(r)
     })
-
-  return module.exports
 }
 
 export function dropUncountableReplacers() {
@@ -124,18 +119,17 @@ export function dropUncountableReplacers() {
   uncountableReplacers.length = 0
   addUncountableReplacers(values<string>(shortReplacers))
   pluralize.addPluralRule(/^millennium$/i, 'millenniums')
-
-  return module.exports
 }
 
 addUncountableReplacers(values<string>(shortReplacers))
 pluralize.addPluralRule(/^millennium$/i, 'millenniums')
 
 // export
-const prettyLargeMs: IPrettyLargeMs = function prettyLargeMs(
-  ms, size = short,
-  rawReplacers = longReplacers,
-  space = getSpace(rawReplacers)) {
+const prettyLargeMs = function prettyLargeMs(
+  ms: number|string,
+  size: number = short,
+  rawReplacers: IReplacers = longReplacers,
+  space: string = getSpace(rawReplacers)): string {
 
   // input valudation
   if (!isString(ms) && !isNumber(ms))
